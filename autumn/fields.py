@@ -1,7 +1,7 @@
 import json
 
 class FieldBase(object):
-    def __init__(self, name=None, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
+    def __init__(self, name, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
         self.name = name
         self.default = default
         self.index = index
@@ -10,9 +10,11 @@ class FieldBase(object):
         self.sql_type = sql_type
         
     def __eq__(self, b):
+        if isinstance(b, FieldBase):
+            return self.name == b.name
         if type(b) == str:
             return self.name == b
-        return super(FieldBase, self).__eq__(b)
+        return False
     
     def to_python(self, value):
         return value
@@ -35,17 +37,16 @@ class TextField(Field):
 class IntegerField(Field):
     def __init__(self, **kwargs):
         kwargs['sql_type'] = 'INTEGER'
-        super(IntegerField, self).__init__(self, **kwargs)
+        super(IntegerField, self).__init__(**kwargs)
 
 class FloatField(Field):
     def __init__(self, **kwargs):
         kwargs['sql_type'] = 'FLOAT'
-        super(IntegerField, self).__init__(self, **kwargs)
+        super(IntegerField, self).__init__(**kwargs)
         
 class IdField(Field):
-    def __init__(self, auto_increment=True):
-        kwargs['sql_type'] = "INTEGER PRIMARY KEY" + (auto_increment and " AUTOINCREMENT" or "")
-        super(IdField, self).__init__(self, **kwargs)
+    def __init__(self, name, auto_increment=True):
+        super(IdField, self).__init__(name, sql_type= ("INTEGER PRIMARY KEY" + (auto_increment and " AUTOINCREMENT" or "")))
     
 class JSONField(Field):
     def to_python(self, dbvalue):

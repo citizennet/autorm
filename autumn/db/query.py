@@ -155,8 +155,8 @@ class Query(object):
         return self.cache
         
     def iterator(self):        
-        for row in self.execute_query().fetchall():
-            obj = self.model(*row)
+        for row in self.execute_query():
+            obj = self.model(*[f.to_python(v) for f,v in zip(self.model._fields, row)])
             obj._new_record = False
             yield obj
             

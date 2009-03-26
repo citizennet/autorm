@@ -40,12 +40,13 @@ class TestModels(unittest.TestCase):
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            first_name VARCHAR(40) NOT NULL,
            last_name VARCHAR(40) NOT NULL,
-           bio TEXT
+           bio TEXT,
          );
          CREATE TABLE books (
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            title VARCHAR(255),
            author_id INT(11),
+           json_data TEXT, 
            FOREIGN KEY (author_id) REFERENCES author(id)
          );
         """
@@ -68,13 +69,14 @@ class TestModels(unittest.TestCase):
         
         tom = Author(first_name='Tom', last_name='Robbins')
         tom.save()
-        print "Tom ID", tom.id
+        #print "Tom ID", tom.id
         Book(title='Ulysses', author_id=james.id).save()
         Book(title='Slaughter-House Five', author_id=kurt.id).save()
         Book(title='Jitterbug Perfume', author_id=tom.id).save()
-        slww = Book(title='Still Life with Woodpecker', author_id=tom.id)
+        slww = Book(title='Still Life with Woodpecker', author_id=tom.id, json_data=['some','data'])
         slww.save()
         
+        self.assertEqual(Book.objects.get(slww.id).json_data[0], 'some')
         # Test ForeignKey
         self.assertEqual(slww.author.first_name, 'Tom')
         

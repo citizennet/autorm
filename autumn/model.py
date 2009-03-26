@@ -2,6 +2,7 @@ from autumn.db.query import Query
 from autumn.db import escape
 from autumn.db.connection import autumn_db, Database
 from autumn.validators import ValidatorChain
+from autumn.fields import *
     
 class ModelCache(object):
     models = {}
@@ -60,15 +61,13 @@ class ModelBase(type):
         if getattr(new_class.Meta, 'introspect', True):
             q = Query.raw_sql('SELECT * FROM %s LIMIT 1' % new_class.Meta.table_safe, db=new_class.db)
             new_class._fields = [Field(f[0]) for f in q.description]
-            for f in q.description: print f
         else:
             new_class._fields = []
 
-        for fname,field in getattr(new_class.Meta, 'fields', {}).items():
-            if fname in new_class._fields:
-                new_class._fields[new_class._fields.index(fname)] = field
+        for field in getattr(new_class.Meta, 'fields', []):
+            if field.name in new_class._fields:
+                new_class._fields[new_class._fields.index(field.name)] = field
             else:
-                field.name = fname
                 new_class._fields.append(field)
         
         # TODO: fix, look at the fields
@@ -78,61 +77,6 @@ class ModelBase(type):
         
         cache.add(new_class)
         return new_class
-    
-class FieldBase(object):
-    def __init__(self, name=None, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
-        self.name = name
-        self.default = default
-        self.index = index
-        self.notnull = notnull
-        self.primary_key = primary_key
-        self.sql_type = sql_type
-        
-    def __eq__(self, b):
-        if type(b) == str:
-            return self.name == b
-        return super(FieldBase, self).__eq__(b)
-    
-    def to_python(self, obj, value):
-        return value
-    
-    def to_db(self, obj, value):
-        return value
-    
-    def define(self):
-        return "%s %s%s%s" % (self.name, 
-                              self.sql_type,
-                              self.default and " DEFAULT " + self.default or "", 
-                              self.notnull and " NOT NULL" or "")
-    
-class Field(FieldBase):
-    pass
-
-class TextField(Field):
-    pass
-
-class IntegerField(Field):
-    def __init__(self, **kwargs):
-        kwargs['sql_type'] = 'INTEGER'
-        super(IntegerField, self).__init__(self, **kwargs)
-
-class FloatField(Field):
-    def __init__(self, **kwargs):
-        kwargs['sql_type'] = 'FLOAT'
-        super(IntegerField, self).__init__(self, **kwargs)
-        
-class IdField(Field):
-    def __init__(self, auto_increment=True):
-        kwargs['sql_type'] = "INTEGER PRIMARY KEY" + (auto_increment and " AUTOINCREMENT" or "")
-        super(IdField, self).__init__(self, **kwargs)
-    
-class JSONField(Field):
-    def to_python(self, obj, dbvalue):
-        return json.dumps(dbvalue)
-    
-    def to_db(self, obj, pyvalue):
-        return json.loads(pyvalue)
-
         
 class BaseManager(object):
     def __init__(self, rclass=None):
@@ -270,7 +214,7 @@ class Model(object):
         query += ', '.join(['%s = %s' % (escape(f.name), self.db.conn.placeholder) for f in self._changed])
         query += ' WHERE %s = %s ' % (escape(self.Meta.pk), self.db.conn.placeholder)
         
-        values = [f.to_db(self, getattr(self, f.name)) for f in self._changed]
+        values = [f.to_db(getattr(self, f.name)) for f in self._changed]
         values.append(self._get_pk())
         
         cursor = Query.raw_sql(query, values, self.db)
@@ -289,7 +233,7 @@ class Model(object):
                ', '.join(fields),
                ', '.join([self.db.conn.placeholder] * len(fields) )
         )
-        values = [f.to_db(self, getattr(self, f.name, None)) for f in self._fields
+        values = [f.to_db(getattr(self, f.name, None)) for f in self._fields
                if f.name != self.Meta.pk or not auto_pk]
         cursor = Query.raw_sql(query, values, self.db)
        

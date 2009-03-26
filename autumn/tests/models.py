@@ -1,5 +1,6 @@
 from autumn.db.connection import autumn_db
 from autumn.model import Model
+from autumn.fields import *
 from autumn.db.query import Query
 
 from autumn.db.relations import ForeignKey, OneToMany
@@ -8,6 +9,9 @@ import datetime
 
 #autumn_db.conn.connect('sqlite3', '/tmp/example.db')
 #autumn_db.conn.connect('mysql', user='root', db='autumn')
+
+#-----------------------------
+# Create the test DB before creating the models, because we want to test introspection on one
 
 autumn_db.conn.connect('sqlite3', ':memory:')
 autumn_db.conn.b_debug = True
@@ -25,6 +29,7 @@ sqlite_create = """
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    title VARCHAR(255),
    author_id INT(11),
+   json_data TEXT,
    FOREIGN KEY (author_id) REFERENCES author(id)
  );
 """
@@ -39,9 +44,12 @@ class Author(Model):
         defaults = {'bio': 'No bio available'}
         validations = {'first_name': validators.Length(),
                        'last_name': (validators.Length(), lambda x: x != 'BadGuy!')}
+        
+        fields = [IdField('id'), Field('first_name'), Field('last_name'), TextField('bio')]
     
 class Book(Model):
     author = ForeignKey(Author)
     
     class Meta:
         table = 'books'
+        fields = [JSONField('json_data')]
