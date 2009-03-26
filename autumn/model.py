@@ -38,10 +38,13 @@ class ModelBase(type):
         if not getattr(new_class.Meta, 'table', None):
             new_class.Meta.table = name.lower()
         new_class.Meta.table_safe = escape(new_class.Meta.table)
-        
-        # Assume id is the default 
-        if not getattr(new_class.Meta, 'pk', None):
-            new_class.Meta.pk = 'id'
+                
+        if not getattr(new_class.Meta, 'objects', None):
+            setattr(new_class, 'objects', BaseManager())
+        else:
+            setattr(new_class, 'objects', new_class.Meta.objects)
+
+        new_class.objects.rclass = new_class
         
         # Create function to loop over iterable validations
         for k, v in getattr(new_class.Meta, 'validations', {}).iteritems():
@@ -53,11 +56,105 @@ class ModelBase(type):
         if not hasattr(new_class, "db"):
             new_class.db = autumn_db
         db = new_class.db
-        q = Query.raw_sql('SELECT * FROM %s LIMIT 1' % new_class.Meta.table_safe, db=new_class.db)
-        new_class._fields = [f[0] for f in q.description]
+        
+        if getattr(new_class.Meta, 'introspect', True):
+            q = Query.raw_sql('SELECT * FROM %s LIMIT 1' % new_class.Meta.table_safe, db=new_class.db)
+            new_class._fields = [Field(f[0]) for f in q.description]
+            for f in q.description: print f
+        else:
+            new_class._fields = []
+
+        for fname,field in getattr(new_class.Meta, 'fields', {}).items():
+            if fname in new_class._fields:
+                new_class._fields[new_class._fields.index(fname)] = field
+            else:
+                field.name = fname
+                new_class._fields.append(field)
+        
+        # TODO: fix, look at the fields
+        # Assume id is the default 
+        if not getattr(new_class.Meta, 'pk', None):
+            new_class.Meta.pk = 'id'
         
         cache.add(new_class)
         return new_class
+    
+class FieldBase(object):
+    def __init__(self, name=None, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
+        self.name = name
+        self.default = default
+        self.index = index
+        self.notnull = notnull
+        self.primary_key = primary_key
+        self.sql_type = sql_type
+        
+    def __eq__(self, b):
+        if type(b) == str:
+            return self.name == b
+        return super(FieldBase, self).__eq__(b)
+    
+    def to_python(self, obj, value):
+        return value
+    
+    def to_db(self, obj, value):
+        return value
+    
+    def define(self):
+        return "%s %s%s%s" % (self.name, 
+                              self.sql_type,
+                              self.default and " DEFAULT " + self.default or "", 
+                              self.notnull and " NOT NULL" or "")
+    
+class Field(FieldBase):
+    pass
+
+class TextField(Field):
+    pass
+
+class IntegerField(Field):
+    def __init__(self, **kwargs):
+        kwargs['sql_type'] = 'INTEGER'
+        super(IntegerField, self).__init__(self, **kwargs)
+
+class FloatField(Field):
+    def __init__(self, **kwargs):
+        kwargs['sql_type'] = 'FLOAT'
+        super(IntegerField, self).__init__(self, **kwargs)
+        
+class IdField(Field):
+    def __init__(self, auto_increment=True):
+        kwargs['sql_type'] = "INTEGER PRIMARY KEY" + (auto_increment and " AUTOINCREMENT" or "")
+        super(IdField, self).__init__(self, **kwargs)
+    
+class JSONField(Field):
+    def to_python(self, obj, dbvalue):
+        return json.dumps(dbvalue)
+    
+    def to_db(self, obj, pyvalue):
+        return json.loads(pyvalue)
+
+        
+class BaseManager(object):
+    def __init__(self, rclass=None):
+        # this is set by the __new__ method of class
+        self.rclass = rclass
+    
+    def cursor(self):
+        c = connection.cursor()
+        c.row_factory = record_factory(self.rclass, use_dict=True)
+        return c
+    
+    def get(self, pk):
+        return self.query(**{self.rclass.Meta.pk: pk})[0]
+
+    def query(self, **kwargs):
+        'Returns Query object'
+        return Query(model=self.rclass, conditions=kwargs)
+    
+    def create(self, *args, **kwargs):
+        o = self.rclass(*args, **kwargs)
+        o.save()
+        return o
 
 class Model(object):
     '''
@@ -149,14 +246,14 @@ class Model(object):
         'Allows setting of fields using kwargs'
         self.__dict__[self.Meta.pk] = None
         self._new_record = True
-        [setattr(self, self._fields[i], arg) for i, arg in enumerate(args)]
+        [setattr(self, self._fields[i].name, arg) for i, arg in enumerate(args)]
         [setattr(self, k, v) for k, v in kwargs.iteritems()]
         self._changed = set()
         
     def __setattr__(self, name, value):
         'Records when fields have changed'
         if name != '_changed' and name in self._fields and hasattr(self, '_changed'):
-            self._changed.add(name)
+            self._changed.add(self._fields[self._fields.index(name)])
         self.__dict__[name] = value
         
     def _get_pk(self):
@@ -165,15 +262,15 @@ class Model(object):
 
     def _set_pk(self, value):
         'Sets the primary key'
-        return setattr(self, self.Meta.pk, value)
+        return setattr(self, self.Meta.pk, value)    
         
     def _update(self):
         'Uses SQL UPDATE to update record'
         query = 'UPDATE %s SET ' % self.Meta.table_safe
-        query += ', '.join(['%s = %s' % (escape(f), self.db.conn.placeholder) for f in self._changed])
+        query += ', '.join(['%s = %s' % (escape(f.name), self.db.conn.placeholder) for f in self._changed])
         query += ' WHERE %s = %s ' % (escape(self.Meta.pk), self.db.conn.placeholder)
         
-        values = [getattr(self, f) for f in self._changed]
+        values = [f.to_db(self, getattr(self, f.name)) for f in self._changed]
         values.append(self._get_pk())
         
         cursor = Query.raw_sql(query, values, self.db)
@@ -184,20 +281,21 @@ class Model(object):
         # if pk field is None, we want to auto-create it from lastrowid
         auto_pk = 1 and (self._get_pk() is None) or 0
         fields=[
-            escape(f) for f in self._fields 
-            if f != self.Meta.pk or not auto_pk
+            escape(f.name) for f in self._fields 
+            if f.name != self.Meta.pk or not auto_pk
         ]
         query = 'INSERT INTO %s (%s) VALUES (%s)' % (
                self.Meta.table_safe,
                ', '.join(fields),
                ', '.join([self.db.conn.placeholder] * len(fields) )
         )
-        values = [getattr(self, f, None) for f in self._fields
-               if f != self.Meta.pk or not auto_pk]
+        values = [f.to_db(self, getattr(self, f.name, None)) for f in self._fields
+               if f.name != self.Meta.pk or not auto_pk]
         cursor = Query.raw_sql(query, values, self.db)
        
         if self._get_pk() is None:
             self._set_pk(cursor.lastrowid)
+
         return True
         
     def _get_defaults(self):
@@ -241,14 +339,6 @@ class Model(object):
             return True
         else:
             return self._update()
-            
-    @classmethod
-    def get(cls, _obj_pk=None, **kwargs):
-        'Returns Query object'
-        if _obj_pk is not None:
-            return cls.get(**{cls.Meta.pk: _obj_pk})[0]
-
-        return Query(model=cls, conditions=kwargs)
         
         
     class ValidationError(Exception):

@@ -33,34 +33,42 @@ class TestModels(unittest.TestCase):
         
         ### SQLITE ###
         #
-        # DROP TABLE IF EXISTS author;
-        # DROP TABLE IF EXISTS books;
-        # CREATE TABLE author (
-        #   id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #   first_name VARCHAR(40) NOT NULL,
-        #   last_name VARCHAR(40) NOT NULL,
-        #   bio TEXT
-        # );
-        # CREATE TABLE books (
-        #   id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #   title VARCHAR(255),
-        #   author_id INT(11),
-        #   FOREIGN KEY (author_id) REFERENCES author(id)
-        # );
+        sqlite_create = """
+         DROP TABLE IF EXISTS author;
+         DROP TABLE IF EXISTS books;
+         CREATE TABLE author (
+           id INTEGER PRIMARY KEY AUTOINCREMENT,
+           first_name VARCHAR(40) NOT NULL,
+           last_name VARCHAR(40) NOT NULL,
+           bio TEXT
+         );
+         CREATE TABLE books (
+           id INTEGER PRIMARY KEY AUTOINCREMENT,
+           title VARCHAR(255),
+           author_id INT(11),
+           FOREIGN KEY (author_id) REFERENCES author(id)
+         );
+        """
+        #autumn_db.conn.connect('sqlite3', ':memory:')
+        #Query.raw_sql(sqlite_create)
         
         for table in ('author', 'books'):
             Query.raw_sql('DELETE FROM %s' % escape(table))
         
         # Test Creation
+        assert Author.objects.query().count() == 0
+        
         james = Author(first_name='James', last_name='Joyce')
         james.save()
+        
+        assert Author.objects.query().count() == 1
         
         kurt = Author(first_name='Kurt', last_name='Vonnegut')
         kurt.save()
         
         tom = Author(first_name='Tom', last_name='Robbins')
         tom.save()
-        
+        print "Tom ID", tom.id
         Book(title='Ulysses', author_id=james.id).save()
         Book(title='Slaughter-House Five', author_id=kurt.id).save()
         Book(title='Jitterbug Perfume', author_id=tom.id).save()
@@ -77,31 +85,31 @@ class TestModels(unittest.TestCase):
         del(james, kurt, tom, slww)
         
         # Test retrieval
-        b = Book.get(title='Ulysses')[0]
+        b = Book.objects.query(title='Ulysses')[0]
         
-        a = Author.get(id=b.author_id)[0]
+        a = Author.objects.get(b.author_id)
         self.assertEqual(a.id, b.author_id)
         
-        a = Author.get(id=b.id)[:]
+        a = Author.objects.query(id=b.id)[:]
         self.assert_(isinstance(a, list))
         
         # Test update
         new_last_name = 'Vonnegut, Jr.'
-        a = Author.get(id=kid)[0]
+        a = Author.objects.query(id=kid)[0]
         a.last_name = new_last_name
         a.save()
         
-        a = Author.get(kid)
+        a = Author.objects.get(kid)
         self.assertEqual(a.last_name, new_last_name)
         
         # Test count
-        self.assertEqual(Author.get().count(), 3)
+        self.assertEqual(Author.objects.query().count(), 3)
         
-        self.assertEqual(len(Book.get()[1:4]), 3)
+        self.assertEqual(len(Book.objects.query()[1:4]), 3)
         
         # Test delete
         a.delete()
-        self.assertEqual(Author.get().count(), 2)
+        self.assertEqual(Author.objects.query().count(), 2)
         
         # Test validation
         a = Author(first_name='', last_name='Ted')
