@@ -45,6 +45,8 @@ class Author(Model):
         validations = {'first_name': validators.Length(),
                        'last_name': (validators.Length(), lambda x: x != 'BadGuy!')}
         
+        introspect = False
+        
         fields = [IdField('id'), Field('first_name'), Field('last_name'), TextField('bio')]
     
 class Book(Model):
