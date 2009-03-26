@@ -1,4 +1,8 @@
-# Autumn, a Python ORM
+# AutORM, fork of Autumn, a Python ORM
+
+This is a derivative project of Autumn [Autumn][http://github.com/JaredKuolt/autumn/tree].  It adds a few features: Fields (e.g. type converters), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD.
+
+## Autumn documentation follows (not updated)
 
 Autumn exists as a super-lightweight Object-relational mapper (ORM) for Python. 
 It’s an alternative to [SQLObject](http://www.sqlobject.org/), 
