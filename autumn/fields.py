@@ -1,4 +1,7 @@
 import json
+import cPickle as pickle
+from cStringIO import StringIO
+
 
 class FieldBase(object):
     def __init__(self, name, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
@@ -32,17 +35,22 @@ class Field(FieldBase):
     pass
 
 class TextField(Field):
-    pass
+    def __init__(self, name, length=None, **kwargs):
+        if not length:
+            kwargs['sql_type'] = 'TEXT'
+        else: 
+            kwargs['sql_type'] = 'VARCHAR(%d)' % length
+        super(TextField, self).__init__(name, **kwargs)
 
 class IntegerField(Field):
-    def __init__(self, **kwargs):
+    def __init__(self, name, **kwargs):
         kwargs['sql_type'] = 'INTEGER'
-        super(IntegerField, self).__init__(**kwargs)
+        super(IntegerField, self).__init__(name, **kwargs)
 
 class FloatField(Field):
-    def __init__(self, **kwargs):
+    def __init__(self, name, **kwargs):
         kwargs['sql_type'] = 'FLOAT'
-        super(IntegerField, self).__init__(**kwargs)
+        super(IntegerField, self).__init__(name, **kwargs)
         
 class IdField(Field):
     def __init__(self, name, auto_increment=True):
@@ -56,3 +64,12 @@ class JSONField(Field):
     def to_db(self, pyvalue):
         if not pyvalue: return None
         return json.dumps(pyvalue)
+
+class PickleField(Field):
+    def to_python(self, dbvalue):
+        if not dbvalue: return None
+        return pickle.loads(str(dbvalue))
+    
+    def to_db(self, pyvalue):
+        if not pyvalue: return None
+        return pickle.dumps(pyvalue)

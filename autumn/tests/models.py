@@ -45,8 +45,6 @@ class Author(Model):
         validations = {'first_name': validators.Length(),
                        'last_name': (validators.Length(), lambda x: x != 'BadGuy!')}
         
-        introspect = False
-        
         fields = [IdField('id'), Field('first_name'), Field('last_name'), TextField('bio')]
     
 class Book(Model):
@@ -54,4 +52,4 @@ class Book(Model):
     
     class Meta:
         table = 'books'
-        fields = [JSONField('json_data')]
+        field_overrides = [JSONField('json_data')]

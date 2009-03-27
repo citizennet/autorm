@@ -58,17 +58,16 @@ class ModelBase(type):
             new_class.db = autumn_db
         db = new_class.db
         
-        if getattr(new_class.Meta, 'introspect', True):
+        if not getattr(new_class.Meta, 'fields', None):
             q = Query.raw_sql('SELECT * FROM %s LIMIT 1' % new_class.Meta.table_safe, db=new_class.db)
             new_class._fields = [Field(f[0]) for f in q.description]
+            
+            for field in getattr(new_class.Meta, 'field_overrides', []):
+                if field.name not in new_class._fields:
+                    raise Exception("No db column named %s in %s" % (field.name, new_class.table))
+                new_class._fields[new_class._fields.index(field.name)] = field            
         else:
-            new_class._fields = []
-
-        for field in getattr(new_class.Meta, 'fields', []):
-            if field.name in new_class._fields:
-                new_class._fields[new_class._fields.index(field.name)] = field
-            else:
-                new_class._fields.append(field)
+            new_class._fields = getattr(new_class.Meta, 'fields')
         
         # TODO: fix, look at the fields
         # Assume id is the default 
@@ -83,11 +82,6 @@ class BaseManager(object):
         # this is set by the __new__ method of class
         self.rclass = rclass
     
-    def cursor(self):
-        c = connection.cursor()
-        c.row_factory = record_factory(self.rclass, use_dict=True)
-        return c
-    
     def get(self, pk):
         return self.query(**{self.rclass.Meta.pk: pk})[0]
 
@@ -95,10 +89,59 @@ class BaseManager(object):
         'Returns Query object'
         return Query(model=self.rclass, conditions=kwargs)
     
+    def cursor(self):
+        c = Query.get_cursor(self.rclass.db)
+        def row_factory(q, row):
+            o = self.rclass()
+            for col,v in zip(q.description, row):
+                if col[0] in o._fields:
+                    f = o._fields[o._fields.index(col[0])]
+                    setattr(o, f.name, f.to_python(v))
+                else:
+                    setattr(o, col[0], v)
+            return o
+        c.row_factory = row_factory
+        return c
+        
     def create(self, *args, **kwargs):
         o = self.rclass(*args, **kwargs)
         o.save()
         return o
+    
+    def table_exists(self):
+        """
+        Given an Autumn model, check to see if its table exists.
+        """
+        try:
+            s_sql = "SELECT * FROM %s LIMIT 1;" % self.rclass.Meta.table_safe
+            Query.raw_sql(s_sql, db=self.rclass.db)
+        except Exception:
+            return False
+    
+        # if no exception, the table exists and we are done
+        return True
+    
+    
+    def create_table(self):
+        """
+        Create a table for an Autumn class.
+        """
+        if hasattr(self.rclass.Meta, 'create_sql'):
+            s_create_sql = self.rclass.Meta.create_sql
+        else:
+            s_create_sql = """CREATE TABLE %s (%s);""" % (self.rclass.Meta.table_safe, ", ".join([f.define() for f in self.rclass._fields]))
+        
+        Query.begin(db=self.rclass.db)
+        Query.raw_sqlscript(s_create_sql, db=self.rclass.db)
+        Query.commit(db=self.rclass.db)
+    
+    
+    def create_table_if_needed(self, table_name, s_create_sql):
+        """
+        Check to see if an Autumn class has its table created; create if needed.
+        """
+        if not self.table_exists():
+            self.create_table()
 
 class Model(object):
     '''
@@ -283,6 +326,10 @@ class Model(object):
             return True
         else:
             return self._update()
+        
+    def items(self):
+        for f in self._fields:
+            yield f.name, getattr(self, f.name, None)
         
         
     class ValidationError(Exception):
