@@ -33,7 +33,11 @@ class Number(Validator):
         return isinstance(number, (int, long, float, complex)) and \
                (self.minimum is None or number >= self.minimum) and \
                (self.maximum is None or number <= self.maximum)
-               
+
+class NotNull(Validator):
+    def __call__(self, value):
+        return value != None
+    
 class ValidatorChain(object):
     def __init__(self, *validators):
         self.validators = validators

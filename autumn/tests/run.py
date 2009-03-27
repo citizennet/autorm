@@ -216,7 +216,7 @@ class TestModels(unittest.TestCase):
         
         class Dud(Model):
             class Meta:
-                fields = [TextField('a',primary_key=True), TextField('b',primary_key=True)]
+                fields = [TextField('a',primary_key=True, notnull=True), TextField('b',primary_key=True)]
         
         #print Bar.objects.tabledef()
         #print Dud.objects.tabledef()

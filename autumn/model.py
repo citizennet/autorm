@@ -47,10 +47,6 @@ class ModelBase(type):
 
         new_class.objects.rclass = new_class
         
-        # Create function to loop over iterable validations
-        for k, v in getattr(new_class.Meta, 'validations', {}).iteritems():
-            if isinstance(v, (list, tuple)):
-                new_class.Meta.validations[k] = ValidatorChain(*v)
         
         # See cursor.description
         # http://www.python.org/dev/peps/pep-0249/
@@ -58,6 +54,7 @@ class ModelBase(type):
             new_class.db = autumn_db
         db = new_class.db
         
+        defaults = {}
         if not getattr(new_class.Meta, 'fields', None):
             q = Query.raw_sql('SELECT * FROM %s LIMIT 1' % new_class.Meta.table_safe, db=new_class.db)
             new_class._fields = [Field(f[0]) for f in q.description]
@@ -65,9 +62,30 @@ class ModelBase(type):
             for field in getattr(new_class.Meta, 'field_overrides', []):
                 if field.name not in new_class._fields:
                     raise Exception("No db column named %s in %s" % (field.name, new_class.table))
-                new_class._fields[new_class._fields.index(field.name)] = field            
+                new_class._fields[new_class._fields.index(field.name)] = field
         else:
             new_class._fields = getattr(new_class.Meta, 'fields')
+
+        field_validations = getattr(new_class.Meta, 'validations', {})
+        for f in new_class._fields:
+            validation = f.validators()
+            if not validation: continue
+            if f.name in field_validations:
+                if type(field_validations[f.name]) == tuple:
+                    field_validations[f.name] = list(field_validations[f.name])
+                elif type(field_validations[f.name]) != list:            
+                    field_validations[f.name] = [field_validations[f.name]]
+                else:
+                    field_validations[f.name].extend(validation)
+            else:
+                field_validations[f.name] = validation
+        
+        # Create function to loop over iterable validations
+        if len(field_validations):
+            new_class.Meta.validations = field_validations
+        for k, v in field_validations.iteritems():
+            if isinstance(v, (list, tuple)):
+                new_class.Meta.validations[k] = ValidatorChain(*v)
         
         # TODO: fix, look at the fields
         # Assume id is the default 

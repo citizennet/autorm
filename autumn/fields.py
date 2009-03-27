@@ -1,6 +1,7 @@
 import json
 import cPickle as pickle
 from cStringIO import StringIO
+from autumn.validators import NotNull
 
 
 class FieldBase(object):
@@ -30,6 +31,11 @@ class FieldBase(object):
                               self.sql_type,
                               self.default and " DEFAULT " + self.default or "", 
                               self.notnull and " NOT NULL" or "")
+        
+    def validators(self):
+        if self.notnull:
+            return NotNull()
+        return None
     
 class Field(FieldBase):
     pass
