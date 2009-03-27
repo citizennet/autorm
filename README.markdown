@@ -2,7 +2,7 @@
 
 This is a derivative project of Autumn [Autumn](http://github.com/JaredKuolt/autumn/tree).  It adds a few features: Fields (e.g. type converters, validation), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD. Why Yet-[Yet Another Python ORM](http://superjared.com/entry/yet-another-python-orm/)? For the same reasons Jared Kuolt built the original Autumn ORM, but my use cases and preferences are slightly different.  I built my own system for use with sqlite that had much in common with Autumn, and a number of other features I needed, but ran into threading issues, so I merged the two projects as AutORM. Many thanks to him for the seed.
 
-## The Autumn documentation (not updated)
+## What is Autumn? 
 
 Autumn exists as a super-lightweight Object-relational mapper (ORM) for Python. 
 It’s an alternative to [SQLObject](http://www.sqlobject.org/), 
@@ -30,6 +30,7 @@ Using these tables:
     CREATE TABLE books (
         id INTEGER PRIMARY KEY autoincrement,
         title VARCHAR(255),
+        other_json_data TEXT,
         author_id INT(11),
         FOREIGN KEY (author_id) REFERENCES author(id)
     );
@@ -50,7 +51,8 @@ We setup our objects like so:
         class Meta:
             defaults = {'bio': 'No bio available'}
             validations = {'first_name': lambda self, v: len(v) > 1}
-			fields = [IdField('id'), TextField('first_name', notnull=True), 
+            # do not inspect the database, use these fields to define the columns
+            fields = [IdField('id'), TextField('first_name', notnull=True), 
 			          TextField('first_name', notnull=True), TextField('last_name', notnull=True), TextField('bio'),
             		  JSONField('some_json_data')]
 
@@ -59,6 +61,9 @@ We setup our objects like so:
 
         class Meta:
             table = 'books'
+            # inspect the database to get field names, 
+            # use the default field type (no-op) for all the columns, except this one:
+            field_overrides = [JSONField('other_json_data')]
 
 Now we can create, retrieve, update and delete entries in our database.
 Creation
