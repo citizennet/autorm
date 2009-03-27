@@ -1,5 +1,5 @@
-from autumn.db import escape
-from autumn.db.connection import autumn_db
+from autorm.db import escape
+from autorm.db.connection import autorm_db
 
 class Query(object):
     '''
@@ -71,7 +71,7 @@ class Query(object):
     '''
     
     def __init__(self, query_type='SELECT *', conditions={}, model=None, db=None):
-        from autumn.model import Model
+        from autorm.model import Model
         self.type = query_type
         self.conditions = conditions
         self.order = ''
@@ -167,7 +167,7 @@ class Query(object):
     @classmethod
     def get_db(cls, db=None):
         if not db:
-            db = getattr(cls, "db", autumn_db)
+            db = getattr(cls, "db", autorm_db)
         return db
         
     @classmethod

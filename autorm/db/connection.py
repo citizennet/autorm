@@ -17,5 +17,5 @@ class DBConn(object):
         self.b_commit = True
         self.conn = None
 
-autumn_db = DBConn()
-autumn_db.conn = Database()
+autorm_db = DBConn()
+autorm_db.conn = Database()

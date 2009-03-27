@@ -1,8 +1,8 @@
-from autumn.db.query import Query
-from autumn.db import escape
-from autumn.db.connection import autumn_db, Database
-from autumn.validators import ValidatorChain
-from autumn.fields import *
+from autorm.db.query import Query
+from autorm.db import escape
+from autorm.db.connection import autorm_db, Database
+from autorm.validators import ValidatorChain
+from autorm.fields import *
     
 class ModelCache(object):
     models = {}
@@ -51,7 +51,7 @@ class ModelBase(type):
         # See cursor.description
         # http://www.python.org/dev/peps/pep-0249/
         if not hasattr(new_class, "db"):
-            new_class.db = autumn_db
+            new_class.db = autorm_db
         db = new_class.db
         
         defaults = {}
@@ -128,7 +128,7 @@ class BaseManager(object):
     
     def table_exists(self):
         """
-        Given an Autumn model, check to see if its table exists.
+        Given an AutORM model, check to see if its table exists.
         """
         try:
             s_sql = "SELECT * FROM %s LIMIT 1;" % self.rclass.Meta.table_safe
@@ -142,7 +142,7 @@ class BaseManager(object):
     
     def create_table(self):
         """
-        Create a table for an Autumn class.
+        Create a table for an AutORM class.
         """
         if hasattr(self.rclass.Meta, 'create_sql'):
             s_create_sql = self.rclass.Meta.create_sql
@@ -156,7 +156,7 @@ class BaseManager(object):
     
     def create_table_if_needed(self, table_name, s_create_sql):
         """
-        Check to see if an Autumn class has its table created; create if needed.
+        Check to see if an AutORM class has its table created; create if needed.
         """
         if not self.table_exists():
             self.create_table()
@@ -167,7 +167,7 @@ class Model(object):
     
     Syntax::
     
-        from autumn.model import Model
+        from autorm.model import Model
         class MyModel(Model):
             class Meta:
                 # If field is blank, this sets a default value on save

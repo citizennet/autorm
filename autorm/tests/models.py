@@ -1,20 +1,20 @@
-from autumn.db.connection import autumn_db
-from autumn.model import Model
-from autumn.fields import *
-from autumn.db.query import Query
+from autorm.db.connection import autorm_db
+from autorm.model import Model
+from autorm.fields import *
+from autorm.db.query import Query
 
-from autumn.db.relations import ForeignKey, OneToMany
-from autumn import validators
+from autorm.db.relations import ForeignKey, OneToMany
+from autorm import validators
 import datetime
 
-#autumn_db.conn.connect('sqlite3', '/tmp/example.db')
-#autumn_db.conn.connect('mysql', user='root', db='autumn')
+#autorm_db.conn.connect('sqlite3', '/tmp/example.db')
+#autorm_db.conn.connect('mysql', user='root', db='autorm')
 
 #-----------------------------
 # Create the test DB before creating the models, because we want to test introspection on one
 
-autumn_db.conn.connect('sqlite3', ':memory:')
-autumn_db.conn.b_debug = True
+autorm_db.conn.connect('sqlite3', ':memory:')
+autorm_db.conn.b_debug = True
 
 sqlite_create = """
  DROP TABLE IF EXISTS author;
@@ -33,7 +33,7 @@ sqlite_create = """
    FOREIGN KEY (author_id) REFERENCES author(id)
  );
 """
-#autumn_db.conn.connect('sqlite3', ':memory:')
+#autorm_db.conn.connect('sqlite3', ':memory:')
 Query.raw_sqlscript(sqlite_create)
 
 

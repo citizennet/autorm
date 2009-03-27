@@ -1,22 +1,22 @@
-# autumn.util.py
+# autorm.util.py
 
 
 from threading import local as threading_local
 
-# Autumn ORM
-from autumn.model import Model
-from autumn.db.relations import ForeignKey, OneToMany
-from autumn.db.query import Query
-from autumn.db.connection import Database
+# AutORM ORM
+from autorm.model import Model
+from autorm.db.relations import ForeignKey, OneToMany
+from autorm.db.query import Query
+from autorm.db.connection import Database
 
 
 """
-Convenience functions for the Autumn ORM.
+Convenience functions for the AutORM ORM.
 """
 
 def table_exists(db, table_name):
     """
-    Given an Autumn model, check to see if its table exists.
+    Given an AutORM model, check to see if its table exists.
     """
     try:
         s_sql = "SELECT * FROM %s LIMIT 1;" % table_name
@@ -30,7 +30,7 @@ def table_exists(db, table_name):
 
 def create_table(db, s_create_sql):
     """
-    Create a table for an Autumn class.
+    Create a table for an AutORM class.
     """
     Query.begin(db=db)
     Query.raw_sqlscript(s_create_sql, db=db)
@@ -39,7 +39,7 @@ def create_table(db, s_create_sql):
 
 def create_table_if_needed(db, table_name, s_create_sql):
     """
-    Check to see if an Autumn class has its table created; create if needed.
+    Check to see if an AutORM class has its table created; create if needed.
     """
     if not table_exists(db, table_name):
         create_table(db, s_create_sql)
@@ -70,7 +70,7 @@ class AutoConn(object):
 # examples of usage:
 #
 # class FooClass(object):
-#     db = autumn.util.AutoConn("foo.db")
+#     db = autorm.util.AutoConn("foo.db")
 #
 # _create_sql = "_create_sql = """\
 # DROP TABLE IF EXISTS bar;
@@ -80,7 +80,7 @@ class AutoConn(object):
 #     UNIQUE (value));
 # CREATE INDEX idx_bar0 ON bar (value);"""
 #
-# autumn.util.create_table_if_needed(FooClass.db, "bar", _create_sql)
+# autorm.util.create_table_if_needed(FooClass.db, "bar", _create_sql)
 #
 # class Bar(FooClass, Model):
-#    ...standard Autumn class stuff goes here...
+#    ...standard AutORM class stuff goes here...

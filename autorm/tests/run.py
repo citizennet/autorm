@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 import unittest
 import datetime
-from autumn.model import Model
-from autumn.fields import *  
-from autumn.db.relations import *
-from autumn.tests.models import Book, Author
-from autumn.db.query import Query
-from autumn.db import escape
-from autumn import validators
+from autorm.model import Model
+from autorm.fields import *  
+from autorm.db.relations import *
+from autorm.tests.models import Book, Author
+from autorm.db.query import Query
+from autorm.db import escape
+from autorm import validators
 
 class TestModels(unittest.TestCase):
         
@@ -52,7 +52,7 @@ class TestModels(unittest.TestCase):
            FOREIGN KEY (author_id) REFERENCES author(id)
          );
         """
-        #autumn_db.conn.connect('sqlite3', ':memory:')
+        #autorm_db.conn.connect('sqlite3', ':memory:')
         #Query.raw_sql(sqlite_create)
         
         for table in ('author', 'books'):

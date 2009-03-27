@@ -1,7 +1,7 @@
 import json
 import cPickle as pickle
 from cStringIO import StringIO
-from autumn.validators import NotNull
+from autorm.validators import NotNull
 
 
 class FieldBase(object):

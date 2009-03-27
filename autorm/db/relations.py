@@ -1,5 +1,5 @@
-from autumn.db.query import Query
-from autumn.model import cache
+from autorm.db.query import Query
+from autorm.model import cache
 
 class Relation(object):
     
