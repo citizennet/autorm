@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 from autorm import version
 
 version = '.'.join([str(x) for x in version])
