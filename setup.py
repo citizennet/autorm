@@ -1,13 +1,13 @@
 from distutils.core import setup
-from autumn import version
+from autorm import version
 
 version = '.'.join([str(x) for x in version])
 
-setup(name='autumn',
+setup(name='autorm',
       version=version,
       description="A minimal ORM",
-      author="Jared Kuolt",
-      author_email="me@superjared.com",
-      url="http://autumn-orm.org",
-      packages = ['autumn', 'autumn.db', 'autumn.tests'],
+      author="Nino Walker",
+      author_email="nino@urbanmapping.com",
+      url="http://github.com/umidev/autorm",
+      packages = ['autorm', 'autorm.db', 'autorm.tests'],
       )
