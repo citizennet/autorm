@@ -136,23 +136,23 @@ class TestModels(unittest.TestCase):
             
     def testvalidators(self):
         ev = validators.Email()
-        assert ev('test@example.com')
-        assert not ev('adsf@.asdf.asdf')
-        assert validators.Length()('a')
-        assert not validators.Length(2)('a')
-        assert validators.Length(max_length=10)('abcdegf')
-        assert not validators.Length(max_length=3)('abcdegf')
+        assert ev(None,'test@example.com')
+        assert not ev(None,'adsf@.asdf.asdf')
+        assert validators.Length()(None,'a')
+        assert not validators.Length(2)(None,'a')
+        assert validators.Length(max_length=10)(None,'abcdegf')
+        assert not validators.Length(max_length=3)(None,'abcdegf')
 
         n = validators.Number(1, 5)
-        assert n(2)
-        assert not n(6)
-        assert validators.Number(1)(100.0)
-        assert not validators.Number()('rawr!')
+        assert n(None,2)
+        assert not n(None,6)
+        assert validators.Number(1)(None,100.0)
+        assert not validators.Number()(None,'rawr!')
 
         vc = validators.ValidatorChain(validators.Length(8), validators.Email())
-        assert vc('test@example.com')
-        assert not vc('a@a.com')
-        assert not vc('asdfasdfasdfasdfasdf')
+        assert vc(None,'test@example.com')
+        assert not vc(None,'a@a.com')
+        assert not vc(None,'asdfasdfasdfasdfasdf')
         
     def testormlite_port(self):
 

@@ -4,7 +4,7 @@ class Validator(object):
     pass
         
 class Regex(Validator):        
-    def __call__(self, value):
+    def __call__(self, obj, value):
         return bool(self.regex.match(value))
         
 class Email(Regex):
@@ -17,7 +17,7 @@ class Length(Validator):
         self.min_length = min_length
         self.max_length = max_length
         
-    def __call__(self, string):
+    def __call__(self, obj, string):
         l = len(str(string))
         return (l >= self.min_length) and \
                (self.max_length is None or l <= self.max_length)
@@ -29,20 +29,20 @@ class Number(Validator):
         self.minimum = minimum
         self.maximum = maximum
         
-    def __call__(self, number):
+    def __call__(self, obj, number):
         return isinstance(number, (int, long, float, complex)) and \
                (self.minimum is None or number >= self.minimum) and \
                (self.maximum is None or number <= self.maximum)
 
 class NotNull(Validator):
-    def __call__(self, value):
+    def __call__(self, obj, value):
         return value != None
     
 class ValidatorChain(object):
     def __init__(self, *validators):
         self.validators = validators
     
-    def __call__(self, value):
+    def __call__(self, obj, value):
         for validator in self.validators:
-            if not validator(value): return False
+            if not validator(obj, value): return False
         return True

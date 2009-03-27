@@ -10,6 +10,8 @@ class Database(object):
             import MySQLdb
             self.connection = MySQLdb.connect(**kwargs)
             self.placeholder = '%s'
+        else:
+            raise Exception("Unknown database type '%s'" % dbtype)
 
 class DBConn(object):
     def __init__(self):

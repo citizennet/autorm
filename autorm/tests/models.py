@@ -43,7 +43,7 @@ class Author(Model):
     class Meta:
         defaults = {'bio': 'No bio available'}
         validations = {'first_name': validators.Length(),
-                       'last_name': (validators.Length(), lambda x: x != 'BadGuy!')}
+                       'last_name': (validators.Length(), lambda obj,x: x != 'BadGuy!')}
         
         fields = [IdField('id'), Field('first_name'), Field('last_name'), TextField('bio')]
     

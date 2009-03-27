@@ -52,7 +52,7 @@ class ModelBase(type):
         # http://www.python.org/dev/peps/pep-0249/
         if not hasattr(new_class, "db"):
             new_class.db = autorm_db
-        db = new_class.db
+        #db = new_class.db
         
         defaults = {}
         if not getattr(new_class.Meta, 'fields', None):
@@ -331,7 +331,7 @@ class Model(object):
         for k, v in getattr(self.Meta, 'validations', {}).iteritems():
             assert callable(v), 'The validator must be callable'
             value = getattr(self, k)
-            if not v(value):
+            if not v(self, value):
                 raise Model.ValidationError, 'Improper value "%s" for "%s"' % (value, k)
         
     def save(self):

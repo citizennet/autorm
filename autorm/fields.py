@@ -34,7 +34,7 @@ class FieldBase(object):
         
     def validators(self):
         if self.notnull:
-            return NotNull()
+            return [NotNull()]
         return None
     
 class Field(FieldBase):
