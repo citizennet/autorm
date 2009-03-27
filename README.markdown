@@ -1,8 +1,8 @@
 # AutORM, fork of Autumn, a Python ORM
 
-This is a derivative project of Autumn [Autumn](http://github.com/JaredKuolt/autumn/tree).  It adds a few features: Fields (e.g. type converters), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD.
+This is a derivative project of Autumn [Autumn](http://github.com/JaredKuolt/autumn/tree).  It adds a few features: Fields (e.g. type converters, validation), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD. Why Yet-[Yet Another Python ORM](http://superjared.com/entry/yet-another-python-orm/)? For the same reasons Jared Kuolt built the original Autumn ORM, but my use cases and preferences are slightly different.  I built my own system for use with sqlite that had much in common with Autumn, and a number of other features I needed, but ran into threading issues, so I merged the two projects as AutORM. Many thanks to him for the seed.
 
-## Autumn documentation follows (not updated)
+## The Autumn documentation (not updated)
 
 Autumn exists as a super-lightweight Object-relational mapper (ORM) for Python. 
 It’s an alternative to [SQLObject](http://www.sqlobject.org/), 
@@ -14,32 +14,32 @@ It is released under the MIT License (see LICENSE file for details).
 
 This project is currently considered beta software.
 
-## MySQL Example
+## SQLite Example
 
 Using these tables:
 
     DROP TABLE IF EXISTS author;
     CREATE TABLE author (
-        id INT(11) NOT NULL auto_increment,
+        id INTEGER PRIMARY KEY autoincrement,
         first_name VARCHAR(40) NOT NULL,
         last_name VARCHAR(40) NOT NULL,
         bio TEXT,
-        PRIMARY KEY (id)
+        some_json_data TEXT
     );
     DROP TABLE IF EXISTS books;
     CREATE TABLE books (
-        id INT(11) NOT NULL auto_increment,
+        id INTEGER PRIMARY KEY autoincrement,
         title VARCHAR(255),
         author_id INT(11),
-        FOREIGN KEY (author_id) REFERENCES author(id),
-        PRIMARY KEY (id)
+        FOREIGN KEY (author_id) REFERENCES author(id)
     );
 
 We setup our objects like so:
 
-    from autumn.db.connection import db
-    from autumn.model import Model
-    from autumn.db.relations import ForeignKey, OneToMany
+    from autorm.db.connection import db
+    from autorm.model import Model
+    from autorm.fields import *
+    from autorm.db.relations import ForeignKey, OneToMany
     import datetime
 
     db.connect('mysql', user='root', db='mydatabase')
@@ -50,6 +50,9 @@ We setup our objects like so:
         class Meta:
             defaults = {'bio': 'No bio available'}
             validations = {'first_name': lambda self, v: len(v) > 1}
+			fields = [IdField('id'), TextField('first_name', notnull=True), 
+			          TextField('first_name', notnull=True), TextField('last_name', notnull=True), TextField('bio'),
+            		  JSONField('some_json_data')]
 
     class Book(Model):
         author = ForeignKey(Author)
@@ -60,7 +63,7 @@ We setup our objects like so:
 Now we can create, retrieve, update and delete entries in our database.
 Creation
 
-    james = Author(first_name='James', last_name='Joyce')
+    james = Author(first_name='James', last_name='Joyce', some_json_data={'key':'value'})
     james.save()
 
     u = Book(title='Ulysses', author_id=james.id)
