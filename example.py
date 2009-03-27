@@ -85,8 +85,11 @@ u.save()
 a = Author.objects.get(1)
 # or
 a = Author.objects.query(id=1)[0]
+# or 
+a = Author.objects.query(first_name='James', last_name='Joyce').order_by('first_name')[0]
 assert a.first_name == 'James'
 assert len(a.books) == 1      # Returns list of author's books
+assert james.some_json_data['key'] == a.some_json_data['key']
 
 # Returns a list, using LIMIT based on slice
 a = Author.objects.query()[:10]   # LIMIT 0, 10
