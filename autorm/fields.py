@@ -61,6 +61,24 @@ class FloatField(Field):
 class IdField(Field):
     def __init__(self, name, auto_increment=True):
         super(IdField, self).__init__(name, sql_type= ("INTEGER PRIMARY KEY" + (auto_increment and " AUTOINCREMENT" or "")))
+
+class BoolField(Field):
+    def __init__(self, name, **kwargs):
+        kwargs['sql_type'] = 'INTEGER'
+        super(BoolField, self).__init__(name, **kwargs)
+
+    def to_python(self, value):
+        if value == None: return None
+        if value == 0:
+            return False
+        return True
+    
+    def to_db(self, value):
+        if value == None: return None
+        if value:
+            return 1
+        return 0
+
     
 class JSONField(Field):
     def to_python(self, dbvalue):

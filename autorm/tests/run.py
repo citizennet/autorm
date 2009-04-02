@@ -158,7 +158,8 @@ class TestModels(unittest.TestCase):
 
         class Foo(Model):
             class Meta:
-                fields = [IdField('id'), IntegerField('moo'), PickleField('pickle')]
+                fields = [IdField('id'), IntegerField('moo'), 
+                          PickleField('pickle'),BoolField('truefalse')]
             bar_set = OneToMany('Bar')
     
         class Bar(Model):
@@ -179,8 +180,9 @@ class TestModels(unittest.TestCase):
         f = Foo(id=1, moo=2, pickle={'a':'b'})
         f.save()
         assert 'a' in Foo.objects.get(1).pickle
+        assert None == Foo.objects.get(1).truefalse
     
-        Foo(id=2,cow=3, moo=2).save()
+        Foo(id=2,cow=3, moo=2, truefalse=True).save()
         b = Bar(id=1,foo_id=1)
         b.save()
         b = Bar(id=2,foo_id=1,json_array=[1,2,3])
@@ -189,6 +191,7 @@ class TestModels(unittest.TestCase):
             #print "Fetch:", o
             assert o.moo == 2
             assert o.id != 3
+            assert o.truefalse != False
         
         assert b.foo != None
         #print ",".join(map(str,f.bar_set.fetchall()))
@@ -216,20 +219,22 @@ class TestModels(unittest.TestCase):
         
         class Dud(Model):
             class Meta:
-                fields = [TextField('a',primary_key=True, notnull=True), TextField('b',primary_key=True)]
+                fields = [TextField('a',primary_key=True, notnull=True), 
+                          TextField('b',primary_key=True),
+                          BoolField('boolf')]
         
         #print Bar.objects.tabledef()
         #print Dud.objects.tabledef()
         
         Dud.objects.create_table()
         
-        Dud(a="a",b="b").save()
+        Dud(a="a",b="b",boolf=False).save()
         d = None
+        # TODO handle multiple primary keys 
         try:
             d = Dud(a="a",b="b").save()
         except:
             pass
-        # TODO handle multiple primary keys 
         # assert d == None 
             
         #print "Passed"
