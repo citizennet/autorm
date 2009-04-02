@@ -79,6 +79,31 @@ class BoolField(Field):
             return 1
         return 0
 
+class ISODateField(Field):
+    def __init__(self, name, **kwargs):
+        kwargs['sql_type'] = 'DATE'
+        super(ISODateField, self).__init__(name, **kwargs)
+  
+    def to_python(self, value):
+        if value == None: return None
+        return datetime.datetime.strptime(value, "%Y-%m-%d").date()
+    
+    def to_db(self, value):
+        if value == None: return None
+        return value.strftime("%Y-%m-%d")
+
+class ISODateTimeField(Field):
+    def __init__(self, name, **kwargs):
+        kwargs['sql_type'] = 'DATE TIME'
+        super(ISODateTimeField, self).__init__(name, **kwargs)
+  
+    def to_python(self, value):
+        if value == None: return None
+        return datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+    
+    def to_db(self, value):
+        if value == None: return None
+        return value.strftime("%Y-%m-%d %H:%M:%S")
     
 class JSONField(Field):
     def to_python(self, dbvalue):

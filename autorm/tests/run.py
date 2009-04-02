@@ -213,6 +213,7 @@ class TestModels(unittest.TestCase):
         assert len(Bar.objects.query()) == 1
     
         f = Foo(moo=2, pickle={'a':'b'})
+        assert str(f) != None
         f.save()
         #print id 
         assert f.id == 3

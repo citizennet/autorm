@@ -349,6 +349,10 @@ class Model(object):
         for f in self._fields:
             yield f.name, getattr(self, f.name, None)
         
+    def __str__(self):
+        return '%s(%s)' % (self.__class__.__name__, 
+                           ", ".join(["%s=%s" % (k,v) for k,v in self.items()]))
+
         
     class ValidationError(Exception):
         pass
