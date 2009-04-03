@@ -154,7 +154,7 @@ class BaseManager(object):
         Query.commit(db=self.rclass.db)
     
     
-    def create_table_if_needed(self, table_name, s_create_sql):
+    def create_table_if_needed(self):
         """
         Check to see if an AutORM class has its table created; create if needed.
         """

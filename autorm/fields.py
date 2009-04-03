@@ -2,6 +2,7 @@ import json
 import cPickle as pickle
 from cStringIO import StringIO
 from autorm.validators import NotNull
+import datetime
 
 
 class FieldBase(object):
@@ -56,7 +57,7 @@ class IntegerField(Field):
 class FloatField(Field):
     def __init__(self, name, **kwargs):
         kwargs['sql_type'] = 'FLOAT'
-        super(IntegerField, self).__init__(name, **kwargs)
+        super(FloatField, self).__init__(name, **kwargs)
         
 class IdField(Field):
     def __init__(self, name, auto_increment=True):
