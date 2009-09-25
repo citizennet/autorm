@@ -122,3 +122,36 @@ Now we can create, retrieve, update and delete entries in our database.
 ### Deleting
 
 	a.delete()
+	
+### Spatialite and Geometry Support
+
+Basic support for GEOMETRY fields are supported, but sophisticated queries must be done manual.  Proper support depends on django.contrib.gis.geos.
+
+	from autorm.db.connection import autorm_db
+	from autorm.db.query import Query
+	from autorm.model import Model
+	from autorm.fields import *
+	from autorm.db.relations import ForeignKey, OneToMany
+	
+	import autorm
+	    
+	from django.contrib.gis.geos import Point
+	
+	class Manifest(Model):
+	    class Meta:
+	        # do not inspect the database, use these fields to define the columns
+	        
+	        fields = [TextField('name', notnull=True),
+	                  GeometryField('the_geom', notnull=True, srid=4326)]
+	        
+	
+	
+    autorm_db.conn.connect('spatialite', ":memory:")
+    autorm_db.conn.b_debug = True
+    Manifest.objects.create_table()
+    
+    Manifest(name='my poi', the_geom=Point(45,45)).save()
+
+    print "Getting geom:" ,Manifest.objects.query()[0].the_geom
+    print list(Manifest.objects.query(the_geom = Point(45,45)))
+	    
