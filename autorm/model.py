@@ -301,6 +301,8 @@ class Model(object):
         
         placeholders = []
         for f in self._fields:
+            if f.name == self.Meta.pk:
+                continue
             if f.sql_type == 'GEOMETRY':
                 placeholders.append("GeomFromText(%s, %d)" % (self.db.conn.placeholder, f.srid))
             else:
