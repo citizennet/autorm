@@ -10,4 +10,8 @@ setup(name='autorm',
       author_email="nino@urbanmapping.com",
       url="http://github.com/umidev/autorm",
       packages = ['autorm', 'autorm.db', 'autorm.tests'],
+      package_data = {
+        '': ['*.sql'],
+    }
+
       )

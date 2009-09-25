@@ -13,6 +13,7 @@ class FieldBase(object):
         self.notnull = notnull
         self.primary_key = primary_key
         self.sql_type = sql_type
+        self.creation_deferred = False
         
     def __eq__(self, b):
         if isinstance(b, FieldBase):
@@ -123,3 +124,45 @@ class PickleField(Field):
     def to_db(self, pyvalue):
         if not pyvalue: return None
         return pickle.dumps(pyvalue)
+
+try:
+    # we prefer the django GEOS implementation
+    import django.contrib.gis.geos
+    HAS_DJGEOS = True
+except:
+    HAS_DJGEOS = False
+
+class GeometryField(Field):
+    def __init__(self, name, **kwargs):
+        kwargs['sql_type'] = 'GEOMETRY'
+        self.srid = kwargs.get('srid',-1)
+        del kwargs['srid']
+        super(GeometryField, self).__init__(name, **kwargs)
+        self.creation_deferred = True
+        self.geom_type = kwargs.get('geom_type','GEOMETRY')
+        self.dimensions = 2
+
+    def to_python(self, dbvalue):
+        if not dbvalue: return None
+        if HAS_DJGEOS:
+            return django.contrib.gis.geos.GEOSGeometry(dbvalue)
+        else: return dbvalue # as WKB
+
+    def to_db(self, pyvalue):
+        if not pyvalue: return None
+        if HAS_DJGEOS:
+            if isinstance(pyvalue, django.contrib.gis.geos.GEOSGeometry): 
+                return pyvalue.wkt
+        return pyvalue # assumed to be WKB
+    
+    def define(self, table_name):
+        return "SELECT AddGeometryColumn('%s', '%s', %s, '%s', %d); SELECT CreateSpatialIndex('%s', '%s')" % \
+            (table_name, 
+             self.name,
+             self.srid,
+             self.geom_type,
+             self.dimensions,
+             table_name,
+             self.name) 
+
+        

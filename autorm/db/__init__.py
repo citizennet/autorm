@@ -1,2 +1,2 @@
 def escape(string):
-    return '`%s`' % string
+    return "`%s`" % string

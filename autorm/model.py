@@ -147,7 +147,16 @@ class BaseManager(object):
         if hasattr(self.rclass.Meta, 'create_sql'):
             s_create_sql = self.rclass.Meta.create_sql
         else:
-            s_create_sql = """CREATE TABLE %s (%s);""" % (self.rclass.Meta.table_safe, ", ".join([f.define() for f in self.rclass._fields]))
+            fields = []
+            deferred = []
+            for f in self.rclass._fields:
+                if f.creation_deferred:
+                    deferred.append(f.define(self.rclass.Meta.table))
+                else:
+                    fields.append(f.define())
+                
+            s_create_sql = """CREATE TABLE %s (%s); %s;""" % (self.rclass.Meta.table_safe, 
+                                                            ", ".join(fields), ";".join(deferred))
         
         Query.begin(db=self.rclass.db)
         Query.raw_sqlscript(s_create_sql, db=self.rclass.db)
@@ -289,10 +298,18 @@ class Model(object):
             escape(f.name) for f in self._fields 
             if f.name != self.Meta.pk or not auto_pk
         ]
+        
+        placeholders = []
+        for f in self._fields:
+            if f.sql_type == 'GEOMETRY':
+                placeholders.append("GeomFromText(%s, %d)" % (self.db.conn.placeholder, f.srid))
+            else:
+                placeholders.append(self.db.conn.placeholder)
+        
         query = 'INSERT INTO %s (%s) VALUES (%s)' % (
                self.Meta.table_safe,
                ', '.join(fields),
-               ', '.join([self.db.conn.placeholder] * len(fields) )
+               ', '.join(placeholders)
         )
         values = [f.to_db(getattr(self, f.name, None)) for f in self._fields
                if f.name != self.Meta.pk or not auto_pk]

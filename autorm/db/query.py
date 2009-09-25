@@ -1,6 +1,13 @@
 from autorm.db import escape
 from autorm.db.connection import autorm_db
 
+try:
+    # we prefer the django GEOS implementation
+    import django.contrib.gis.geos
+    HAS_DJGEOS = True
+except:
+    HAS_DJGEOS = False
+
 class Query(object):
     '''
     Gives quick access to database by setting attributes (query conditions, et
@@ -80,6 +87,14 @@ class Query(object):
         if not issubclass(model, Model):
             raise Exception('Query objects must be created with a model class.')
         self.model = model
+        if model:
+            select_fields = []
+            for f in model.Meta.fields:
+                if f.sql_type == 'GEOMETRY':
+                    select_fields.append("AsText(%s)" % escape(f.name))
+                else: select_fields.append(escape(f.name))
+            self.type = "SELECT %s" % ",".join(select_fields)
+                
         if db:
             self.db = db
         elif model:
@@ -130,11 +145,38 @@ class Query(object):
         return self
         
     def extract_condition_keys(self):
-        if len(self.conditions):
+        if not len(self.conditions):
+            return
+        if not HAS_DJGEOS:             
             return 'WHERE %s' % ' AND '.join("%s=%s" % (escape(k), self.db.conn.placeholder) for k in self.conditions)
+        conds = []
+        for k,v in self.conditions.items():
+            if isinstance(v, django.contrib.gis.geos.GEOSGeometry):
+                srid = v.srid
+                if not srid:
+                    if self.model:
+                        for f in self.model.Meta.fields:
+                            if f.name == k:
+                                srid = f.srid
+                                break
+                    if not srid: raise Exception("No SRID specified for '%s' value" % k)
+                            
+                conds.append("%s=GeomFromText(%s, %d)" % (escape(k), self.db.conn.placeholder, srid))
+            else:
+                conds.append("%s=%s" % (escape(k), self.db.conn.placeholder))
+        return 'WHERE %s' % ' AND '.join(conds)
+        
         
     def extract_condition_values(self):
-        return list(self.conditions.itervalues())
+        if not HAS_DJGEOS:             
+            return list(self.conditions.itervalues())
+        
+        values = []
+        for v in self.conditions.itervalues():
+            if isinstance(v, django.contrib.gis.geos.GEOSGeometry):
+                v = v.wkt
+            values.append(v)
+        return values
         
     def query_template(self):
         return '%s FROM %s %s %s %s' % (
