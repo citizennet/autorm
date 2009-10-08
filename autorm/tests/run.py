@@ -78,6 +78,7 @@ class TestModels(unittest.TestCase):
         slww = Book(title='Still Life with Woodpecker', author_id=tom.id, json_data=['some','data'])
         slww.save()
         
+        #print "JSON Data = '%s'" % Book.objects.get(slww.id).json_data
         self.assertEqual(Book.objects.get(slww.id).json_data[0], 'some')
         # Test ForeignKey
         self.assertEqual(slww.author.first_name, 'Tom')
@@ -247,6 +248,55 @@ class TestModels(unittest.TestCase):
             #print k, v
             
         assert fields == len(Foo._fields)
+        
+class TestSpatialLite(unittest.TestCase):
+    def testspatialite(self):
+        from autorm.db.connection import autorm_db
+        from autorm.db.query import Query
+        from autorm.model import Model
+        from autorm.fields import TextField, GeometryField, IntegerField
+        from autorm.db.relations import ForeignKey, OneToMany
+        import datetime
+        
+        import autorm
+            
+        from django.contrib.gis.geos import Point, Polygon
+        
+        class Manifest(Model):
+            class Meta:
+                # do not inspect the database, use these fields to define the columns
+                
+                fields = [TextField('data_type', notnull=True),
+                          TextField('name', notnull=True),
+                          TextField('table_name', notnull=True),
+                          IntegerField('int_val', notnull=True),
+                          GeometryField('the_geom', notnull=True, srid=4326)]
+                
+        # ================== manage =======================
+        
+        # from autorm_models import *
+        
+        def manage(filename):
+            autorm_db.conn.connect('spatialite', filename)
+            autorm_db.conn.b_debug = True
+            Manifest.objects.create_table()
+            
+            Manifest(data_type='POI', name='my poi', table_name='a table', int_val=10, the_geom=Point(45,45)).save()
+        
+            print "Getting geom:" ,Manifest.objects.query()[0].the_geom
+            assert len(list(Manifest.objects.query(the_geom = Point(45,45)))) == 1
+            assert len(list(Manifest.objects.query(the_geom = Point(40,45)))) == 0
+            assert len(list(Manifest.objects.query(the_geom__bbintersects = Point(40,45).buffer(5.1)))) == 1
+            assert len(list(Manifest.objects.query(the_geom__contains = Point(40,45).buffer(5.1)))) == 0
+            assert len(list(Manifest.objects.query(the_geom__within = Point(40,45).buffer(5.1)))) == 1
+            assert len(list(Manifest.objects.query(int_val=10,
+                                                   the_geom__within = Point(40,45).buffer(5.1)))) == 1
+            assert len(list(Manifest.objects.query(int_val__gt=10,
+                                                   the_geom__within = Point(40,45).buffer(5.1)))) == 0
+            assert len(list(Manifest.objects.query(int_val__gte=10,
+                                                   the_geom__within = Point(40,45).buffer(5.1)))) == 1
+        
+        manage(":memory:")
         
 if __name__ == '__main__':
     unittest.main()

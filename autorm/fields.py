@@ -3,7 +3,8 @@ import cPickle as pickle
 from cStringIO import StringIO
 from autorm.validators import NotNull
 import datetime
-
+from autorm.db import escape
+from autorm.db.query import OPERATORS
 
 class FieldBase(object):
     def __init__(self, name, default=None, index=False, notnull=False, primary_key=False, sql_type="TEXT"):
@@ -28,16 +29,21 @@ class FieldBase(object):
     def to_db(self, value):
         return value
     
+    def sql_conditional(self, value, operator, placeholder):
+        operator = OPERATORS[operator]
+        return "%s %s %s" % (escape(self.name), operator, placeholder), self.to_db(value)
+    
     def define(self):
         return "%s %s%s%s" % (self.name, 
                               self.sql_type,
-                              self.default and " DEFAULT " + self.default or "", 
+                              self.default != None and " DEFAULT " + self.to_db(self.default) or "", 
                               self.notnull and " NOT NULL" or "")
         
     def validators(self):
         if self.notnull:
             return [NotNull()]
         return None
+    
     
 class Field(FieldBase):
     pass
@@ -133,6 +139,15 @@ except:
     HAS_DJGEOS = False
 
 class GeometryField(Field):
+    GEOM_OPERATORS = {\
+        "eq": "Equals(%s, %s)",
+        "bbintersects":"MbrIntersects(%s, %s)",
+        "intersects": "Intersects(%s, %s)",
+        "contains": "Contains(%s, %s)",
+        "within": "Within(%s, %s)",
+        "crosses": "Crosses(%s, %s)",
+    }
+    
     def __init__(self, name, **kwargs):
         kwargs['sql_type'] = 'GEOMETRY'
         self.srid = kwargs.get('srid',-1)
@@ -146,14 +161,24 @@ class GeometryField(Field):
         if not dbvalue: return None
         if HAS_DJGEOS:
             return django.contrib.gis.geos.GEOSGeometry(dbvalue)
-        else: return dbvalue # as WKB
+        else: return dbvalue # as WKT
 
     def to_db(self, pyvalue):
         if not pyvalue: return None
         if HAS_DJGEOS:
             if isinstance(pyvalue, django.contrib.gis.geos.GEOSGeometry): 
-                return pyvalue.wkt
-        return pyvalue # assumed to be WKB
+                pyvalue = pyvalue.wkt
+        return pyvalue # assumed to be WKT
+    
+    def sql_conditional(self, value, operator, placeholder):
+        srid = None
+        if HAS_DJGEOS:
+            srid = value.srid
+        if not srid:
+            srid = self.srid
+                
+        return self.GEOM_OPERATORS[operator] % (escape(self.name),
+                                           "GeomFromText(%s, %d)" % (placeholder, self.srid)), self.to_db(value)
     
     def define(self, table_name):
         return "SELECT AddGeometryColumn('%s', '%s', %s, '%s', %d); SELECT CreateSpatialIndex('%s', '%s')" % \

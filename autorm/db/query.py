@@ -1,6 +1,15 @@
 from autorm.db import escape
 from autorm.db.connection import autorm_db
 
+OPERATORS = {"eq": "=",
+             "neq": "!=",
+             "lt": "<",
+             "lte": "<=",
+             "gt": ">",
+             "gte": ">=",
+             }
+
+
 try:
     # we prefer the django GEOS implementation
     import django.contrib.gis.geos
@@ -144,45 +153,46 @@ class Query(object):
         self.order = 'ORDER BY %s %s' % (escape(field), direction)
         return self
         
-    def extract_condition_keys(self):
+    def extract_condition_clause_and_values(self):
         if not len(self.conditions):
-            return
-        if not HAS_DJGEOS:             
-            return 'WHERE %s' % ' AND '.join("%s=%s" % (escape(k), self.db.conn.placeholder) for k in self.conditions)
+            return "", []
+        
+            fail
+            
         conds = []
-        for k,v in self.conditions.items():
-            if isinstance(v, django.contrib.gis.geos.GEOSGeometry):
-                srid = v.srid
-                if not srid:
-                    if self.model:
-                        for f in self.model.Meta.fields:
-                            if f.name == k:
-                                srid = f.srid
-                                break
-                    if not srid: raise Exception("No SRID specified for '%s' value" % k)
-                            
-                conds.append("%s=GeomFromText(%s, %d)" % (escape(k), self.db.conn.placeholder, srid))
-            else:
-                conds.append("%s=%s" % (escape(k), self.db.conn.placeholder))
-        return 'WHERE %s' % ' AND '.join(conds)
-        
-        
-    def extract_condition_values(self):
-        if not HAS_DJGEOS:             
-            return list(self.conditions.itervalues())
-        
         values = []
-        for v in self.conditions.itervalues():
-            if isinstance(v, django.contrib.gis.geos.GEOSGeometry):
-                v = v.wkt
-            values.append(v)
-        return values
-        
-    def query_template(self):
+
+        if not self.model:
+            for k,v in self.conditions.items():
+                operator = "eq"
+                if "__" in k:
+                    name, operator = k.split("__")
+                else:
+                    name = k
+                conds.append("%s%s%s" % (escape(k), OPERATORS[operator], self.db.conn.placeholder))
+                values.append(v)
+        else:
+            for k,v in self.conditions.items():
+                operator = "eq"
+                if "__" in k:
+                    name, operator = k.split("__")
+                else:
+                    name = k
+                
+                if name not in self.model.Meta.field_map:
+                    raise Exeption("Invalid field name: %s" % name)    
+                
+                cond, val = self.model.Meta.field_map[name].sql_conditional(v, operator, self.db.conn.placeholder)
+                conds.append(cond)
+                values.append(val)
+                        
+        return 'WHERE %s' % ' AND '.join(conds), values
+                
+    def query_template(self, condition_str):
         return '%s FROM %s %s %s %s' % (
             self.type,
             self.model.Meta.table_safe,
-            self.extract_condition_keys() or '',
+            condition_str or '',
             self.order,
             self.extract_limit() or '',
         )
@@ -203,8 +213,8 @@ class Query(object):
             yield obj
             
     def execute_query(self):
-        values = self.extract_condition_values()
-        return Query.raw_sql(self.query_template(), values, self.db)
+        condition_str, values = self.extract_condition_clause_and_values()
+        return Query.raw_sql(self.query_template(condition_str), values, self.db)
         
     @classmethod
     def get_db(cls, db=None):

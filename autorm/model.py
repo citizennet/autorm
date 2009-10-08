@@ -63,11 +63,14 @@ class ModelBase(type):
                 if field.name not in new_class._fields:
                     raise Exception("No db column named %s in %s" % (field.name, new_class.table))
                 new_class._fields[new_class._fields.index(field.name)] = field
+            new_class.Meta.fields = new_class._fields
         else:
             new_class._fields = getattr(new_class.Meta, 'fields')
 
         field_validations = getattr(new_class.Meta, 'validations', {})
+        field_map = {}
         for f in new_class._fields:
+            field_map[f.name] = f
             validation = f.validators()
             if not validation: continue
             if f.name in field_validations:
@@ -80,6 +83,8 @@ class ModelBase(type):
             else:
                 field_validations[f.name] = validation
         
+        # cache a map of the fields
+        new_class.Meta.field_map = field_map
         # Create function to loop over iterable validations
         if len(field_validations):
             new_class.Meta.validations = field_validations
@@ -293,15 +298,15 @@ class Model(object):
         'Uses SQL INSERT to create new record'
         # if pk field is set, we want to insert it too
         # if pk field is None, we want to auto-create it from lastrowid
-        auto_pk = 1 and (self._get_pk() is None) or 0
+        include_pk = True if self._get_pk() is not None else False
         fields=[
             escape(f.name) for f in self._fields 
-            if f.name != self.Meta.pk or not auto_pk
+                if f.name != self.Meta.pk or include_pk
         ]
         
         placeholders = []
         for f in self._fields:
-            if f.name == self.Meta.pk:
+            if f.name == self.Meta.pk and not include_pk:
                 continue
             if f.sql_type == 'GEOMETRY':
                 placeholders.append("GeomFromText(%s, %d)" % (self.db.conn.placeholder, f.srid))
@@ -314,9 +319,10 @@ class Model(object):
                ', '.join(placeholders)
         )
         values = [f.to_db(getattr(self, f.name, None)) for f in self._fields
-               if f.name != self.Meta.pk or not auto_pk]
+                      if f.name != self.Meta.pk or include_pk]    
+
         cursor = Query.raw_sql(query, values, self.db)
-       
+        
         if self._get_pk() is None:
             self._set_pk(cursor.lastrowid)
 
