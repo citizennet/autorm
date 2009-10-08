@@ -1,6 +1,6 @@
 # AutORM, fork of Autumn, a Python ORM
 
-This is a derivative project of Autumn [Autumn](http://github.com/JaredKuolt/autumn/tree).  It adds a few features: Fields (e.g. type converters, validation), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD. Why Yet-[Yet Another Python ORM](http://superjared.com/entry/yet-another-python-orm/)? For the same reasons Jared Kuolt built the original Autumn ORM, but my use cases and preferences are slightly different.  I built my own system for use with sqlite that had much in common with Autumn, and a number of other features I needed, but ran into threading issues, so I merged the two projects as AutORM. Many thanks to him for the seed.
+This is a derivative project of Autumn [Autumn](http://github.com/JaredKuolt/autumn/tree).  It adds a few features: Fields (e.g. type converters, validation), query condition modifiers (less than, etc.), a few Django conventions (e.g. Model.objects.*), table creation from models, and ... TBD. Why Yet-[Yet Another Python ORM](http://superjared.com/entry/yet-another-python-orm/)? For the same reasons Jared Kuolt built the original Autumn ORM, but my use cases and preferences are slightly different.  I built my own system for use with sqlite that had much in common with Autumn, and a number of other features I needed, but ran into threading issues, so I merged the two projects as AutORM. Many thanks to him for the seed.
 
 ## What is Autumn (and by extension, AutORM)? 
 
