@@ -250,6 +250,8 @@ class Query(object):
         db = db or cls.get_db()
         cursor = cls.get_cursor(db)
         try:
+            if db.b_log_queries:
+                print "execute: ", sql
             cursor.execute(sql, values)
             if db.b_commit:
                 db.conn.connection.commit()
@@ -266,6 +268,8 @@ class Query(object):
         db = db or cls.get_db()
         cursor = cls.get_cursor(db)
         try:
+            if db.b_log_queries:
+                print "execute: ", sql
             cursor.executescript(sql)
             if db.b_commit:
                 db.conn.connection.commit()

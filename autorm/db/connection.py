@@ -36,6 +36,7 @@ class Database(object):
 
 class DBConn(object):
     def __init__(self):
+        self.b_log_queries = False
         self.b_debug = False
         self.b_commit = True
         self.conn = None
