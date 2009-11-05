@@ -238,7 +238,9 @@ class TestModels(unittest.TestCase):
         except:
             pass
         # assert d == None 
-            
+        assert len(Dud.objects.query(a__in=["a"])) == 2
+        assert len(Dud.objects.query(a__notin=["a"])) == 0
+        assert len(Dud.objects.query(a__in=["b"])) == 0
         #print "Passed"
         
         fields = 0 

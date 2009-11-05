@@ -7,6 +7,8 @@ OPERATORS = {"eq": "=",
              "lte": "<=",
              "gt": ">",
              "gte": ">=",
+             "in": "in",
+             "notin": "not in",
              }
 
 
@@ -169,8 +171,14 @@ class Query(object):
                     name, operator = k.split("__")
                 else:
                     name = k
-                conds.append("%s%s%s" % (escape(k), OPERATORS[operator], self.db.conn.placeholder))
-                values.append(v)
+                if operator in ('notin','in'):
+                    if type(v) not in (list, tuple):
+                        v = (v,)
+                    conds.append("%s %s (%s)" % (escape(k), OPERATORS[operator],",".join([self.db.conn.placeholder]*len(v)))) 
+                    values.extend(map(str,v))
+                else:
+                    conds.append("%s %s %s" % (escape(k), OPERATORS[operator], self.db.conn.placeholder))
+                    values.append(v)
         else:
             for k,v in self.conditions.items():
                 operator = "eq"
@@ -184,7 +192,10 @@ class Query(object):
                 
                 cond, val = self.model.Meta.field_map[name].sql_conditional(v, operator, self.db.conn.placeholder)
                 conds.append(cond)
-                values.append(val)
+                if type(val) in (list, tuple):
+                    values.extend(val)
+                else:
+                    values.append(val)
                         
         return 'WHERE %s' % ' AND '.join(conds), values
                 

@@ -30,13 +30,17 @@ class FieldBase(object):
         return value
     
     def sql_conditional(self, value, operator, placeholder):
-        operator = OPERATORS[operator]
-        return "%s %s %s" % (escape(self.name), operator, placeholder), self.to_db(value)
+        if operator in ('notin','in'):
+            if type(value) not in (list, tuple):
+                value = (value,)
+            return "%s %s (%s)" % (escape(self.name), OPERATORS[operator],",".join([placeholder]*len(value))), map(self.to_db,value)  
+        else:
+            return "%s %s %s" % (escape(self.name), OPERATORS[operator], placeholder), self.to_db(value)
     
     def define(self):
         return "%s %s%s%s" % (self.name, 
                               self.sql_type,
-                              self.default != None and " DEFAULT " + self.to_db(self.default) or "", 
+                              self.default != None and " DEFAULT %s" % self.to_db(self.default) or "", 
                               self.notnull and " NOT NULL" or "")
         
     def validators(self):

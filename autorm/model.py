@@ -264,14 +264,14 @@ class Model(object):
     def __init__(self, *args, **kwargs):
         'Allows setting of fields using kwargs'
         self.__dict__[self.Meta.pk] = None
-        self._new_record = True
+        self.__dict__['_new_record'] = True
         [setattr(self, self._fields[i].name, arg) for i, arg in enumerate(args)]
         [setattr(self, k, v) for k, v in kwargs.iteritems()]
         self._changed = set()
         
     def __setattr__(self, name, value):
         'Records when fields have changed'
-        if name != '_changed' and name in self._fields and hasattr(self, '_changed'):
+        if self._new_record is False and name != '_changed' and name in self._fields and hasattr(self, '_changed'):
             self._changed.add(self._fields[self._fields.index(name)])
         self.__dict__[name] = value
         
@@ -299,25 +299,30 @@ class Model(object):
         # if pk field is set, we want to insert it too
         # if pk field is None, we want to auto-create it from lastrowid
         include_pk = True if self._get_pk() is not None else False
-        fields=[
-            escape(f.name) for f in self._fields 
-                if f.name != self.Meta.pk or include_pk
-        ]
-        
-        placeholders = []
-        for f in self._fields:
-            if f.name == self.Meta.pk and not include_pk:
-                continue
-            if f.sql_type == 'GEOMETRY':
-                placeholders.append("GeomFromText(%s, %d)" % (self.db.conn.placeholder, f.srid))
-            else:
-                placeholders.append(self.db.conn.placeholder)
-        
-        query = 'INSERT INTO %s (%s) VALUES (%s)' % (
-               self.Meta.table_safe,
-               ', '.join(fields),
-               ', '.join(placeholders)
-        )
+        if not hasattr(self.__class__, "_insert_stmt_cache_%s" % include_pk):
+            fields=[
+                escape(f.name) for f in self._fields 
+                    if f.name != self.Meta.pk or include_pk
+            ]
+            
+            placeholders = []
+            for f in self._fields:
+                if f.name == self.Meta.pk and not include_pk:
+                    continue
+                if f.sql_type == 'GEOMETRY':
+                    placeholders.append("GeomFromText(%s, %d)" % (self.db.conn.placeholder, f.srid))
+                else:
+                    placeholders.append(self.db.conn.placeholder)
+            
+            query = 'INSERT INTO %s (%s) VALUES (%s)' % (
+                   self.Meta.table_safe,
+                   ', '.join(fields),
+                   ', '.join(placeholders)
+            )
+            setattr(self.__class__, "_insert_stmt_cache_%s" % include_pk, query)
+        else:
+            query = getattr(self.__class__, "_insert_stmt_cache_%s" % include_pk)
+            
         values = [f.to_db(getattr(self, f.name, None)) for f in self._fields
                       if f.name != self.Meta.pk or include_pk]    
 
