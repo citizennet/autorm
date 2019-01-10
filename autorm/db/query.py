@@ -9,6 +9,8 @@ OPERATORS = {"eq": "=",
              "gte": ">=",
              "in": "in",
              "notin": "not in",
+             "is": "is",
+             "isnot": "is not",
              }
 
 
@@ -188,7 +190,7 @@ class Query(object):
                     name = k
                 
                 if name not in self.model.Meta.field_map:
-                    raise Exeption("Invalid field name: %s" % name)    
+                    raise Exception("Invalid field name: %s" % name)    
                 
                 cond, val = self.model.Meta.field_map[name].sql_conditional(v, operator, self.db.conn.placeholder)
                 conds.append(cond)
