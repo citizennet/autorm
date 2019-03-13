@@ -156,7 +156,15 @@ class Query(object):
     def order_by(self, field, direction='ASC'):
         self.order = 'ORDER BY %s %s' % (escape(field), direction)
         return self
-        
+
+    def order_by_FIELD_in(self, field, field_list, direction='ASC'):
+        self.order = 'ORDER BY FIELD(%s, %s) %s' % (
+            escape(field),
+            ", ".join(map(str, field_list)),
+            direction
+        )
+        return self
+
     def extract_condition_clause_and_values(self):
         if not len(self.conditions):
             return "", []
