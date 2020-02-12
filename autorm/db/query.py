@@ -185,7 +185,7 @@ class Query(object):
                     if type(v) not in (list, tuple):
                         v = (v,)
                     conds.append("%s %s (%s)" % (escape(k), OPERATORS[operator],",".join([self.db.conn.placeholder]*len(v)))) 
-                    values.extend(map(str,v))
+                    values.extend(list(map(str,v)))
                 else:
                     conds.append("%s %s %s" % (escape(k), OPERATORS[operator], self.db.conn.placeholder))
                     values.append(v)

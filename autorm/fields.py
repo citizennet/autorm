@@ -33,7 +33,7 @@ class FieldBase(object):
         if operator in ('notin','in'):
             if type(value) not in (list, tuple):
                 value = (value,)
-            return "%s %s (%s)" % (escape(self.name), OPERATORS[operator],",".join([placeholder]*len(value))), map(self.to_db,value)  
+            return "%s %s (%s)" % (escape(self.name), OPERATORS[operator],",".join([placeholder]*len(value))), list(map(self.to_db,value))
         else:
             return "%s %s %s" % (escape(self.name), OPERATORS[operator], placeholder), self.to_db(value)
     
