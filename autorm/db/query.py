@@ -261,15 +261,15 @@ class Query(object):
         cursor = cls.get_cursor(db)
         try:
             if db.b_log_queries:
-                print "execute: ", sql
+                print("execute: ", sql)
             cursor.execute(sql, values)
             if db.b_commit:
                 db.conn.connection.commit()
         except BaseException, ex:
             if db.b_debug:
-                print "raw_sql: exception: ", ex
-                print "sql:", sql
-                print "values:", values
+                print("raw_sql: exception: ", ex)
+                print("sql:", sql)
+                print("values:", values)
             raise
         return cursor
 
@@ -279,14 +279,14 @@ class Query(object):
         cursor = cls.get_cursor(db)
         try:
             if db.b_log_queries:
-                print "execute: ", sql
+                print("execute: ", sql)
             cursor.executescript(sql)
             if db.b_commit:
                 db.conn.connection.commit()
         except BaseException, ex:
             if db.b_debug:
-                print "raw_sqlscript: exception: ", ex
-                print "sql:", sql
+                print("raw_sqlscript: exception: ", ex)
+                print("sql:", sql)
             raise
         return cursor
 
