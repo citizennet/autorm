@@ -265,7 +265,7 @@ class Query(object):
             cursor.execute(sql, values)
             if db.b_commit:
                 db.conn.connection.commit()
-        except BaseException, ex:
+        except BaseException as ex:
             if db.b_debug:
                 print("raw_sql: exception: ", ex)
                 print("sql:", sql)
@@ -283,7 +283,7 @@ class Query(object):
             cursor.executescript(sql)
             if db.b_commit:
                 db.conn.connection.commit()
-        except BaseException, ex:
+        except BaseException as ex:
             if db.b_debug:
                 print("raw_sqlscript: exception: ", ex)
                 print("sql:", sql)

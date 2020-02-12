@@ -362,7 +362,7 @@ class Model(object):
             assert callable(v), 'The validator must be callable'
             value = getattr(self, k)
             if not v(self, value):
-                raise Model.ValidationError, 'Improper value "%s" for "%s"' % (value, k)
+                raise Model.ValidationError('Improper value "%s" for "%s"' % (value, k))
         
     def save(self):
         'Sets defaults, validates and inserts into or updates database'
