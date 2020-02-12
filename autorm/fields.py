@@ -1,6 +1,12 @@
 import json
-import cPickle as pickle
-from cStringIO import StringIO
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 from autorm.validators import NotNull
 import datetime
 from autorm.db import escape

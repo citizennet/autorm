@@ -1,6 +1,11 @@
 from autorm.db.query import Query
 from autorm.model import cache
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 class Relation(object):
     
     def __init__(self, model, field=None):            
