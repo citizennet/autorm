@@ -3,6 +3,7 @@ from autorm.db import escape
 from autorm.db.connection import autorm_db, Database
 from autorm.validators import ValidatorChain
 from autorm.fields import *
+from future.utils import with_metaclass
     
 class ModelCache(object):
     models = {}
@@ -175,7 +176,7 @@ class BaseManager(object):
         if not self.table_exists():
             self.create_table()
 
-class Model(object):
+class Model(object, with_metaclass(ModelBase)):
     '''
     Allows for automatic attributes based on table columns.
     
@@ -257,7 +258,6 @@ class Model(object):
         # Removing the second argument defaults the order to ASC
         
     '''
-    __metaclass__ = ModelBase
     
     debug = False
 
